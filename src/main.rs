@@ -214,13 +214,19 @@ impl Fairing for ChecksumFairing {
             return;
         }
 
+        if let Some(length) = req.headers().get_one("Content-Length") {
+            if length.parse::<u64>().unwrap_or(1 * 1024 * 1024) >= 1 * 1024 * 1024 {
+                return;
+            }
+        }
+
         // Create an empty Data object and swap with borrowed data reference
         let mut swap_data = rocket::data::Data::local(vec![]);
         std::mem::swap(data, &mut swap_data);
 
         // Get the message content
         let request_content = swap_data
-            .open(10.megabytes())
+            .open(1.megabytes())
             .into_bytes()
             .await
             .unwrap()
