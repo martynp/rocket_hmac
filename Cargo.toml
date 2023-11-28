@@ -7,6 +7,6 @@ edition = "2021"
 base64 = "0.21"
 md5 = "0.7"
 openssl = "0.10"
-rocket = { path="./rocket/core/lib", features = ["json", "allow-data-mutation"] }
+rocket = { path="../rocket/core/lib", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 sha2 = "0.10"

@@ -130,9 +130,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cookie"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7efb37c3e1ccb1ff97164ad95ac1606e8ccd35b3fa0a7d99a304c7f4a428cc24"
+checksum = "3cd91cf61412820176e137621345ee43b3f4423e589e7ae4e50d601d93e35ef8"
 dependencies = [
  "percent-encoding",
  "time",
@@ -501,7 +501,6 @@ checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg",
  "hashbrown 0.12.3",
- "serde",
 ]
 
 [[package]]
@@ -512,6 +511,7 @@ checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.0",
+ "serde",
 ]
 
 [[package]]
@@ -789,7 +789,7 @@ checksum = "0ec95680a7087503575284e5063e14b694b7a9c0b065e5dceec661e0497127e8"
 dependencies = [
  "inlinable_string",
  "pear_codegen",
- "yansi",
+ "yansi 0.5.1",
 ]
 
 [[package]]
@@ -853,7 +853,7 @@ dependencies = [
  "quote",
  "syn",
  "version_check",
- "yansi",
+ "yansi 0.5.1",
 ]
 
 [[package]]
@@ -956,7 +956,7 @@ checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
 
 [[package]]
 name = "rocket"
-version = "0.5.0-rc.3"
+version = "0.6.0-dev"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -966,8 +966,7 @@ dependencies = [
  "either",
  "figment",
  "futures",
- "indexmap 1.9.3",
- "is-terminal",
+ "indexmap 2.0.0",
  "log",
  "memchr",
  "multer",
@@ -988,21 +987,22 @@ dependencies = [
  "tokio-util",
  "ubyte",
  "version_check",
- "yansi",
+ "yansi 1.0.0-rc.1",
 ]
 
 [[package]]
 name = "rocket_codegen"
-version = "0.5.0-rc.3"
+version = "0.6.0-dev"
 dependencies = [
  "devise",
  "glob",
- "indexmap 1.9.3",
+ "indexmap 2.0.0",
  "proc-macro2",
  "quote",
  "rocket_http",
  "syn",
  "unicode-xid",
+ "version_check",
 ]
 
 [[package]]
@@ -1019,14 +1019,14 @@ dependencies = [
 
 [[package]]
 name = "rocket_http"
-version = "0.5.0-rc.3"
+version = "0.6.0-dev"
 dependencies = [
  "cookie",
  "either",
  "futures",
  "http",
  "hyper",
- "indexmap 1.9.3",
+ "indexmap 2.0.0",
  "log",
  "memchr",
  "pear",
@@ -1623,3 +1623,12 @@ name = "yansi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
+
+[[package]]
+name = "yansi"
+version = "1.0.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1367295b8f788d371ce2dbc842c7b709c73ee1364d30351dd300ec2203b12377"
+dependencies = [
+ "is-terminal",
+]

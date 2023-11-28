@@ -16,6 +16,12 @@ use rocket::State;
 
 use sha2::{Digest, Sha256};
 
+#[derive(Debug, Default)]
+struct HmacData {
+    md5: String,
+    sha256: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct Req<'r> {
@@ -68,15 +74,13 @@ impl<'r> FromRequest<'r> for HmacAuth {
         // <Content-SHA256>\n
         // <Path>
 
+        let hmac_data = req.local_cache(|| Box::new(HmacData::default()));
+
+        dbg!(&hmac_data);
+
         let method = req.method().to_string().to_uppercase();
-        let content_md5 = match req.meta.get::<String>(&"md5".into()) {
-            Some(v) => v,
-            None => return Outcome::Failure((Status::InternalServerError, HmacAuthError::Invalid)),
-        };
-        let content_sha256 = match req.meta.get::<String>(&"sha256".into()) {
-            Some(v) => v,
-            None => return Outcome::Failure((Status::InternalServerError, HmacAuthError::Invalid)),
-        };
+        let content_md5 = hmac_data.md5.to_owned();
+        let content_sha256 = hmac_data.sha256.to_owned();
 
         let string_to_sign = format!(
             "{}\n{}\n{}\n{}",
@@ -90,7 +94,7 @@ impl<'r> FromRequest<'r> for HmacAuth {
         let public_key = match req.headers().get_one("x-public-key") {
             Some(key) => X509::from_pem(&general_purpose::STANDARD.decode(key).unwrap()).unwrap(),
             None => {
-                return Outcome::Failure((
+                return Outcome::Error((
                     Status::BadRequest,
                     HmacAuthError::PublicKey("Missing".into()),
                 ));
@@ -100,14 +104,14 @@ impl<'r> FromRequest<'r> for HmacAuth {
         // Check we have an auth header
         let auth = match validate_authorization_header(req.headers().get_one("authorization")) {
             Ok(a) => a,
-            Err(e) => return Outcome::Failure((Status::BadRequest, e)),
+            Err(e) => return Outcome::Error((Status::BadRequest, e)),
         };
 
         // Get the root ca certificate and verify the public key was signed correctly
         let root_ca = match req.guard::<&State<RootCAState>>().await {
             rocket::outcome::Outcome::Success(root_ca) => &root_ca.cert,
-            rocket::outcome::Outcome::Failure(_) | rocket::outcome::Outcome::Forward(_) => {
-                return Outcome::Failure((Status::InternalServerError, HmacAuthError::Invalid));
+            rocket::outcome::Outcome::Error(_) | rocket::outcome::Outcome::Forward(_) => {
+                return Outcome::Error((Status::InternalServerError, HmacAuthError::Invalid));
             }
         };
 
@@ -115,14 +119,14 @@ impl<'r> FromRequest<'r> for HmacAuth {
         match public_key.verify(&root_public_key.public_key().unwrap().as_ref()) {
             Ok(v) => {
                 if v == false {
-                    return Outcome::Failure((
+                    return Outcome::Error((
                         Status::BadRequest,
                         HmacAuthError::PublicKey("Public key does not verify".into()),
                     ));
                 }
             }
             Err(e) => {
-                return Outcome::Failure((
+                return Outcome::Error((
                     Status::BadRequest,
                     HmacAuthError::PublicKey(format!("Error verifying: {}", e)),
                 ));
@@ -133,7 +137,7 @@ impl<'r> FromRequest<'r> for HmacAuth {
         let pkey = match pkey {
             Ok(p) => p,
             Err(e) => {
-                return Outcome::Failure((
+                return Outcome::Error((
                     Status::BadRequest,
                     HmacAuthError::PublicKey(format!("Error getting key from certificate: {}", e)),
                 ));
@@ -143,7 +147,7 @@ impl<'r> FromRequest<'r> for HmacAuth {
             openssl::sign::Verifier::new(MessageDigest::sha256(), pkey.as_ref()).unwrap();
         verifier.update(&string_to_sign.as_bytes()).unwrap();
         if verifier.verify(&auth).unwrap() == false {
-            return Outcome::Failure((Status::BadRequest, HmacAuthError::Invalid));
+            return Outcome::Error((Status::BadRequest, HmacAuthError::Invalid));
         }
 
         let sig = public_key
@@ -233,16 +237,17 @@ impl Fairing for ChecksumFairing {
             .value;
 
         let md5_digest = md5::compute(&request_content).0;
-        req.meta
-            .insert("md5".into(), general_purpose::STANDARD.encode(&md5_digest));
 
         let mut sha256_hasher = Sha256::new();
         sha256_hasher.update(request_content.as_slice());
         let sha256_digest = sha256_hasher.finalize();
-        req.meta.insert(
-            "sha256".into(),
-            general_purpose::STANDARD.encode(&sha256_digest),
-        );
+
+        req.local_cache(|| {
+            Box::new(HmacData {
+                md5: general_purpose::STANDARD.encode(&md5_digest),
+                sha256: general_purpose::STANDARD.encode(&sha256_digest),
+            })
+        });
 
         // Put the data in to a new Data object and swap it back in with the borrowed data reference
         let mut new_data = rocket::data::Data::local(request_content);
